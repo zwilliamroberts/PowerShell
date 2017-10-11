@@ -1,0 +1,126 @@
+Function Get-ParsedName {
+
+  Param(
+    [Parameter(Mandatory=$True,Position=1)]
+    [String]$NameObject
+  )
+  BEGIN{
+  [Int32]$count = new-object System.Int32
+  [Int32]$nameEnd = new-object System.Int32
+  [String]$primaryFirstName = [String]::Empty
+  [String]$primaryFirstName = [String]::Empty
+  [String]$primaryMiddleName = [String]::Empty
+  [String]$primaryLastname = [String]::Empty
+  [String]$SecondaryFirstName = [String]::Empty
+  [String]$SecondaryMiddleName = [String]::Empty
+  [String]$SecondaryLastname = [String]::Empty
+  [Boolean]$Household = $False
+  [Object[]]$splitObj = $NameObject.Split(" ")
+  
+  $fullName = $NameObject
+
+  If($NameObject -match "[\u0026]" -or $NameObject -match " [aA]nd " -or $NameObject -match "[fFa]mily" -or $NameObject -match "[hH]ousehold"){
+  
+
+        foreach ($and in $splitObj) {
+          
+          If ($and -contains "&" -or $and -contains "[aA]nd") {
+            $nameEnd = $count -1 
+            break  
+          }
+          $count += 1
+        }
+
+        $Household = $True
+        $NameObject = $NameObject -replace " [Ff]amily",""
+        $NameObject = $NameObject -replace " [Hh]ousehold",""
+        $NameObject = $NameObject -replace " [Aa]nd "," " 
+        $NameObject = $NameObject -replace " & "," "
+
+        [Object[]]$splitObj = $NameObject.Split(" ")
+  }
+
+  
+  }
+  PROCESS{
+
+  $count = ($splitObj.Length - 1) #Space count
+
+  If (-not $household) {
+
+  if ($count -eq 1) {
+   
+    [String]$primaryFirstName = $splitObj[0]
+    [String]$primaryMiddleName = [String]::Empty
+    [String]$primaryLastname = $splitObj[1]
+  }
+  elseif($count -gt 1 -and ($splitObj[$splitObj.length -1].Contains(".") -or  $splitObj[$splitObj.length -1].length -le 3 )) { #to catch .jr or IV or II situations
+    
+    [String]$primaryFirstName = $splitObj[0]
+    foreach($middle in $splitObj[1..($splitObj.length - 3)]) {$primaryMiddleName += ($middle + " ")}
+    $primarylastName = ($splitObj[($splitObj.length - 2)] + " " + $SplitObj[($splitObj.length - 1)]) 
+  }
+  else {
+    #[Object[]]$splitObj = $NameObject.Split(" ")
+    [String]$primaryFirstName = $splitObj[0]
+    foreach($middle in $splitObj[1..($splitObj.length - 2)]) {$primaryMiddleName += ($middle + " ")}
+    [String]$primaryLastname = $splitObj[$splitObj.length -1]
+  }
+
+  }
+  else{
+
+  [String]$primaryFirstName = $splitObj[0]
+
+    if ($count -eq 3) {
+
+    [String]$primaryLastName = $splitObj[$nameEnd]
+    [String]$SecondaryFirstName = $splitObj[$nameEnd+1]
+    [String]$SecondaryLastName = $splitObj[$splitObj.length -1]
+    }
+
+    elseif ($count -gt 3) {
+
+    [String]$primaryLastName = $splitObj[$nameEnd]
+
+    If ($splitObj[$nameEnd - 1] -ne $PrimaryFirstName) {
+     
+      foreach($middle in $splitObj[1..($nameEnd-1)]){$primaryMiddleName += ($middle + " ")}
+    
+    }
+    [String]$SecondaryFirstName = $splitObj[$nameEnd+1]
+    [String]$SecondaryLastName = $splitObj[$splitObj.length -1]
+    If ($splitObj[($nameEnd+2)] -ne $SecondaryLastName) { 
+      
+      foreach($middle in $splitObj[($nameEnd+2)..($splitObj.length -2)]){$SecondaryMiddleName += ($middle + " ")}
+    
+    }
+    
+    
+    }
+
+    else {
+    [String]$SecondaryFirstName = $splitObj[1]
+    [String]$primaryLastName = $splitObj[$splitObj.length -1]
+    [String]$SecondaryLastName = $primaryLastname
+    }
+
+  }
+  $PrimaryMiddlename = $PrimaryMiddlename.TrimEnd()
+  }
+  END{
+
+  Return New-Object PsObject -Property ([ordered]@{
+  'Full Name' = $fullName
+  'Primary First' = $primaryFirstName
+  'Primary Middle' = $primaryMiddleName
+  'Primary Last' = $primaryLastname
+  'Secondary First' = $SecondaryFirstName
+  'Secondary Middle' = $SecondaryMiddleName
+  'Secondary Last' = $SecondaryLastname
+  'Household' = $Household
+
+  })
+  #Should return an object. Beg, Middle, End
+  }
+}
